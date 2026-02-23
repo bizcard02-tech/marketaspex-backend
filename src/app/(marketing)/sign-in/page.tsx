@@ -7,11 +7,11 @@ import { useForm, type SubmitHandler } from "react-hook-form"
 import { toast } from "sonner"
 
 import { siteConfig } from "@/config/site"
-import { useSignIn } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAuthContext } from "@/components/auth/auth-provider"
 import { Icons } from "@/components/icons"
 
 // ============================================================================
@@ -29,7 +29,7 @@ interface SignInFormData {
 
 export default function SignInPage() {
   const router = useRouter()
-  const signInMutation = useSignIn()
+  const { signIn, isLoading } = useAuthContext()
 
   const {
     register,
@@ -44,7 +44,7 @@ export default function SignInPage() {
 
   const onSubmit: SubmitHandler<SignInFormData> = async (data) => {
     try {
-      await signInMutation.mutateAsync(data)
+      await signIn(data.email, data.password)
       toast.success("Welcome back!")
       await new Promise((resolve) => setTimeout(resolve, 1000))
       router.push("/dashboard")

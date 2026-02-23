@@ -18,6 +18,8 @@ import {
 
 import { useAuthUser, useSignIn, useSignOut, useSignUp } from "@/lib/api-client"
 import { authUtils, TOKEN_KEY, type AuthUser } from "@/lib/auth-utils"
+import { authenticateStatic } from "@/lib/static-auth-utils"
+import { isStaticAuthMode } from "@/lib/static-credentials"
 
 // ============================================================================
 // TYPES
@@ -153,7 +155,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true)
 
       try {
-        const result = await signInMutation.mutateAsync({ email, password })
+        let result: { user: AuthUser; token: string }
+
+        // Check if static auth mode is enabled
+        if (isStaticAuthMode()) {
+          const staticResult = authenticateStatic(email, password)
+          if (!staticResult) {
+            throw new Error("Invalid email or password")
+          }
+          result = staticResult
+        } else {
+          // Use API-based authentication
+          result = await signInMutation.mutateAsync({ email, password })
+        }
 
         // Store token and user data
         authUtils.setAuthData(result.token, result.user)
@@ -184,11 +198,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true)
 
       try {
-        const result = await signUpMutation.mutateAsync({
-          name,
-          email,
-          password,
-        })
+        let result: { user: AuthUser; token: string }
+
+        // Check if static auth mode is enabled
+        if (isStaticAuthMode()) {
+          // Static mode: create mock user and token
+          const staticUser: AuthUser = {
+            id: "static-user-" + Date.now(),
+            name,
+            email,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+          result = {
+            user: staticUser,
+            token: "static-token-" + Date.now(),
+          }
+        } else {
+          // Use API-based authentication
+          result = await signUpMutation.mutateAsync({
+            name,
+            email,
+            password,
+          })
+        }
 
         // Store token and user data
         authUtils.setAuthData(result.token, result.user)

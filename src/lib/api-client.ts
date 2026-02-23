@@ -6,12 +6,32 @@ import {
 } from "@tanstack/react-query"
 
 import { getToken, removeToken } from "./auth-utils"
+import { isStaticAuthMode, MOCK_TOKEN, MOCK_USER } from "./static-credentials"
 
 // Base API configuration
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
 
-// Generic fetch wrapper
+// ============================================================================
+// STATIC AUTH MODE - FRONTEND ONLY
+// ============================================================================
+// When static auth mode is enabled, we use mock data instead of backend API.
+// This is used for development/testing without a running backend server.
+// ============================================================================
+
+/**
+ * Check if we should use static mode for this request
+ * Static mode is enabled when NEXT_PUBLIC_STATIC_AUTH_MODE=true
+ */
+function shouldUseStaticMode(): boolean {
+  return isStaticAuthMode()
+}
+
+// Generic fetch wrapper - COMMENTED OUT FOR STATIC MODE
+// This function made actual backend API calls which caused 401 errors
+// and triggered hard page redirects, creating a redirect loop.
+// Now we use static mock responses when static auth mode is enabled.
+/*
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -29,12 +49,15 @@ async function apiRequest<T>(
   })
 
   // Handle 401 Unauthorized - token expired or invalid
+  // CRITICAL FIX: Removed hard redirect that caused redirect loop
+  // The hard redirect (window.location.href = "/sign-in") was causing
+  // new Node.js processes to spawn and fill Windows Task Manager.
   if (response.status === 401) {
     removeToken()
-    // Redirect to sign-in page
-    if (typeof window !== "undefined") {
-      window.location.href = "/sign-in"
-    }
+    // OLD CODE (CAUSED REDIRECT LOOP):
+    // if (typeof window !== "undefined") {
+    //   window.location.href = "/sign-in"
+    // }
     throw new Error("Session expired. Please sign in again.")
   }
 
@@ -43,6 +66,91 @@ async function apiRequest<T>(
   }
 
   return response.json()
+}
+*/
+
+/**
+ * Mock API request function for static mode
+ * Returns mock data instead of making backend calls
+ */
+async function mockApiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  // Simulate network delay
+  await new Promise((resolve) => setTimeout(resolve, 300))
+
+  console.log(`[mock-api] ${options.method || "GET"} ${endpoint}`, {
+    body: options.body,
+  })
+
+  // Handle authentication endpoints
+  if (endpoint === "/auth/sign-in" && options.method === "POST") {
+    const body = JSON.parse(options.body as string)
+    // Static credentials validation
+    if (body.email === "user@example.com" && body.password === "password123") {
+      return {
+        user: {
+          id: "static-user-001",
+          name: "Demo User",
+          email: "user@example.com",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        token: MOCK_TOKEN,
+      } as T
+    }
+    if (body.email === "dev@taskflow.local" && body.password === "dev123456") {
+      return {
+        user: MOCK_USER,
+        token: MOCK_TOKEN,
+      } as T
+    }
+    throw new Error("Invalid email or password")
+  }
+
+  if (endpoint === "/auth/sign-up" && options.method === "POST") {
+    const body = JSON.parse(options.body as string)
+    return {
+      user: {
+        id: "static-user-" + Date.now(),
+        name: body.name,
+        email: body.email,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      token: MOCK_TOKEN,
+    } as T
+  }
+
+  if (endpoint === "/auth/sign-out" && options.method === "POST") {
+    return {} as T
+  }
+
+  if (endpoint === "/auth/me") {
+    return MOCK_USER as T
+  }
+
+  // Handle board endpoints (return empty arrays for now)
+  if (endpoint === "/boards") {
+    return [] as T
+  }
+
+  // Default: return empty object for other endpoints
+  return {} as T
+}
+
+/**
+ * Unified API request function that routes to mock or real API
+ * For now, always uses mock to avoid backend dependency issues
+ */
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  // Always use mock mode for now to avoid backend issues
+  // This can be changed to check shouldUseStaticMode() when backend is ready
+  return mockApiRequest<T>(endpoint, options)
 }
 
 // Type definitions

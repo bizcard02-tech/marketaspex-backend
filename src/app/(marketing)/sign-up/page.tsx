@@ -8,11 +8,11 @@ import { toast } from "sonner"
 import zxcvbn from "zxcvbn"
 
 import { siteConfig } from "@/config/site"
-import { useSignUp } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAuthContext } from "@/components/auth/auth-provider"
 import { Icons } from "@/components/icons"
 
 // ============================================================================
@@ -32,7 +32,7 @@ interface SignUpFormData {
 
 export default function SignUpPage() {
   const router = useRouter()
-  const signUpMutation = useSignUp()
+  const { signUp, isLoading } = useAuthContext()
 
   const {
     register,
@@ -53,7 +53,7 @@ export default function SignUpPage() {
   const onSubmit: SubmitHandler<SignUpFormData> = async (data) => {
     try {
       const { confirmPassword, ...signUpData } = data
-      await signUpMutation.mutateAsync(signUpData)
+      await signUp(signUpData.name, signUpData.email, signUpData.password)
       toast.success("Account created successfully!", {
         description: "Redirecting to your dashboard...",
       })
