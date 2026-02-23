@@ -115,6 +115,12 @@ export function isTokenValid(token: string): boolean {
     return false
   }
 
+  // Special handling for static auth tokens (frontend-only mode)
+  // Static tokens don't follow JWT format, so we treat them as always valid
+  if (token.startsWith("static-auth-token-")) {
+    return true
+  }
+
   const payload = decodeToken(token)
   if (!payload) {
     return false

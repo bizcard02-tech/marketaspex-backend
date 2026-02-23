@@ -69,8 +69,7 @@ export default function RootPage() {
 
   // Not authenticated - show landing page
   // The landing page is imported from the marketing route group
-  // We dynamically import it to avoid circular dependencies
-  const LandingPage = require("@/app/(marketing)/page").default
+  const LandingPage = require("@/app/(marketing)/landing-page").LandingPage
 
   return <LandingPage />
 }

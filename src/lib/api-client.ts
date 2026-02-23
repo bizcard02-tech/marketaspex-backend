@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query"
 
 import { getToken, removeToken } from "./auth-utils"
+import { mockBoards } from "./mock-data"
 import { isStaticAuthMode, MOCK_TOKEN, MOCK_USER } from "./static-credentials"
 
 // Base API configuration
@@ -131,9 +132,9 @@ async function mockApiRequest<T>(
     return MOCK_USER as T
   }
 
-  // Handle board endpoints (return empty arrays for now)
+  // Handle board endpoints
   if (endpoint === "/boards") {
-    return [] as T
+    return mockBoards as T
   }
 
   // Default: return empty object for other endpoints

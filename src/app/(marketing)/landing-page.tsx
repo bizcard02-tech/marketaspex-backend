@@ -60,7 +60,7 @@ const Footer = () => {
   )
 }
 
-function LandingPage() {
+export function LandingPage() {
   return (
     <div className="flex h-full flex-col">
       <Navbar />
@@ -113,6 +113,3 @@ function LandingPage() {
     </div>
   )
 }
-
-export default LandingPage
-export { LandingPage }

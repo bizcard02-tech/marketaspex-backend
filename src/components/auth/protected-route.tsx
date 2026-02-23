@@ -65,7 +65,13 @@ export function ProtectedRoute({
    * Only redirect after loading is complete to avoid unnecessary redirects
    */
   useEffect(() => {
+    console.log("[ProtectedRoute] Auth check:", {
+      isAuthenticated,
+      isLoading,
+      redirectTo,
+    })
     if (!isLoading && !isAuthenticated) {
+      console.log("[ProtectedRoute] Redirecting to:", redirectTo)
       router.push(redirectTo)
     }
   }, [isAuthenticated, isLoading, router, redirectTo])
